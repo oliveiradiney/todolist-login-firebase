@@ -6,6 +6,8 @@ import { signOut } from 'firebase/auth';
 import { 
     addDoc ,
     collection,
+    deleteDoc,
+    doc,
     onSnapshot,
     orderBy,
     query,
@@ -40,8 +42,6 @@ export default function Admin(){
                             userUid: doc.data().userUid
                         })
                     })
-
-                    console.log(lista)
                     setTarefas(lista);
                 })
             }
@@ -69,12 +69,17 @@ export default function Admin(){
             setTarefaInput('')
         })
         .catch((error) => {
-            console.log("ERRO AO REGISTRAR "+ error)
+            console.log("ERRO AO REGISTRAR " + error)
         })
     }
 
     async function handleLogout(){
         await signOut(auth);
+    }
+
+    async function deleteTarefa(id){
+        const docRef = doc(db, "tarefas", id)
+        await deleteDoc(docRef)
     }
 
     return(
@@ -92,15 +97,17 @@ export default function Admin(){
                 <button className="btn-register" type="submit">Registrar tarefa</button>
             </form>
 
-            <article className='list'>
-                <p>Estudar javascript e reactjs hoje a noite</p>
+            {tarefas.map((item) => (
+                <article key={item.id} className='list'>
+                    <p>{item.tarefa}</p>
 
-                <div>
-                    <button>Editar</button>
-                    <button className='btn-delete'>Concluir</button>
-                </div>
-            </article>
-            
+                    <div>
+                        <button>Editar</button>
+                        <button onClick={() => deleteTarefa(item.id)} className='btn-delete'>Concluir</button>
+                    </div>
+                </article>
+            ))}
+
             <button className='btn-logout' onClick={handleLogout}>Sair</button>
         </div>
     )
