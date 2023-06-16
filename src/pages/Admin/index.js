@@ -5,18 +5,47 @@ import { auth, db } from '../../services/firebaseConnection';
 import { signOut } from 'firebase/auth';
 import { 
     addDoc ,
-    collection
+    collection,
+    onSnapshot,
+    orderBy,
+    query,
+    where
 } from 'firebase/firestore';
 
 
 export default function Admin(){
-    const [tarefa, setTarefa] = useState('');
+    const [tarefaInput, setTarefaInput] = useState('');
     const [user, setUser] = useState({})
+
+    const [tarefas, setTarefas] = useState([]);
 
     useEffect(() => {
         async function loadtarefas(){
             const userDetail = localStorage.getItem("@detailUser");
             setUser(JSON.parse(userDetail))
+
+            if(userDetail){
+                const data = JSON.parse(userDetail);
+
+                const tarefaRef = collection(db, "tarefas")
+                const q = query(tarefaRef, orderBy("created","desc"), where("userUid", "==", data?.uid))
+
+                const unsub = onSnapshot(q, (snapshot) => {
+                    let lista = [];
+
+                    snapshot.forEach((doc)=>{
+                        lista.push({
+                            id: doc.id,
+                            tarefa: doc.data().tarefa,
+                            userUid: doc.data().userUid
+                        })
+                    })
+
+                    console.log(lista)
+                    setTarefas(lista);
+                })
+            }
+
         }
 
         loadtarefas();
@@ -25,19 +54,19 @@ export default function Admin(){
     async function handleRegister(e){
         e.preventDefault();
 
-        if(tarefa === ''){
+        if(tarefaInput === ''){
             alert("Digite sua tarefa...")
             return;
         }
 
         await addDoc(collection(db, "tarefas"),{
-            tarefa: tarefa,
+            tarefa: tarefaInput,
             created: new Date(),
             userUid: user?.uid
         })
         .then(() => {
             console.log("TAREFA REGISTRADA")
-            setTarefa('')
+            setTarefaInput('')
         })
         .catch((error) => {
             console.log("ERRO AO REGISTRAR "+ error)
@@ -55,8 +84,8 @@ export default function Admin(){
             <form className="form" onSubmit={handleRegister}>
                 <textarea 
                     placeholder='Digite sua tarefa...'
-                    value={tarefa}
-                    onChange={(e) => setTarefa(e.target.value)}
+                    value={tarefaInput}
+                    onChange={(e) => setTarefaInput(e.target.value)}
 
                 />
 
